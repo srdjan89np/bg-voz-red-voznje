@@ -20,6 +20,15 @@ Aplikacija je povezana sa AdMob aplikacijom **BG voz - red vožnje** i oglasnom 
 
 Ne klikći svoje prave reklame dok testiraš – AdMob to kažnjava.
 
+## Google Play
+
+1. Dodaj 4 GitHub Secrets (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`) u
+   *Settings → Secrets and variables → Actions*.
+2. Posle sledećeg build-a, u Releases se pojavi i **`bg-voz-google-play.aab`** – to se šalje u Play Console.
+3. Politika privatnosti: <https://srdjan89np.github.io/bg-voz-red-voznje/privacy.html>
+
+Bez secrets-a build pravi običan debug APK.
+
 ## Struktura
 
 | Putanja | Šta je |

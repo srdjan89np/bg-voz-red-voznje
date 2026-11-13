@@ -11,13 +11,27 @@ android {
         applicationId = "rs.bgvoz.redvoznje"
         minSdk = 23
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()
+        versionName = "1.0." + (System.getenv("VERSION_CODE") ?: "1")
+    }
+
+    // Potpisivanje za Google Play: podaci dolaze iz GitHub Secrets (vidi .github/workflows/build.yml)
+    val ksFile = System.getenv("KEYSTORE_FILE")
+    signingConfigs {
+        if (ksFile != null) {
+            create("upload") {
+                storeFile = file(ksFile)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            if (ksFile != null) signingConfig = signingConfigs.getByName("upload")
         }
     }
     compileOptions {
