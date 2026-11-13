@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!--
-      TEST ID-jevi od Google-a. Pre objave na Google Play ZAMENI ih svojim iz AdMob konzole:
-      admob_app_id    -> Apps > tvoja aplikacija > App settings > App ID  (ca-app-pub-XXXX~YYYY)
-      admob_banner_id -> Ad units > Banner > Ad unit ID                  (ca-app-pub-XXXX/ZZZZ)
-    -->
-    <string name="admob_app_id" translatable="false">ca-app-pub-3940256099942544~3347511713</string>
-    <string name="admob_banner_id" translatable="false">ca-app-pub-3940256099942544/9214589741</string>
+    <!-- AdMob: aplikacija "BG voz - red vožnje", oglasna jedinica "Baner dole" -->
+    <string name="admob_app_id" translatable="false">ca-app-pub-6000407187020240~3981133605</string>
+    <string name="admob_banner_id" translatable="false">ca-app-pub-6000407187020240/5389759055</string>
+    <!-- Google test ID-jevi (za probu): app ca-app-pub-3940256099942544~3347511713, baner ca-app-pub-3940256099942544/9214589741 -->
 </resources>

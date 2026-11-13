@@ -15,13 +15,8 @@ Najnoviji APK: **Releases → Najnovija verzija → `bg-voz.apk`**.
 
 ## AdMob
 
-U `app/src/main/res/values/admob.xml` su trenutno **Google test ID-jevi** (prikazuju probnu reklamu).
-Pre objave na Google Play zameni ih svojim:
-
-1. Na <https://admob.google.com> dodaj aplikaciju (Android).
-2. Kopiraj **App ID** (`ca-app-pub-…~…`) u `admob_app_id`.
-3. Napravi **Ad unit → Banner** i kopiraj ID (`ca-app-pub-…/…`) u `admob_banner_id`.
-4. Commit → GitHub sam napravi novi APK.
+Aplikacija je povezana sa AdMob aplikacijom **BG voz - red vožnje** i oglasnom jedinicom **Baner dole**
+(ID-jevi su u `app/src/main/res/values/admob.xml`).
 
 Ne klikći svoje prave reklame dok testiraš – AdMob to kažnjava.
 
