@@ -81,6 +81,15 @@ footer{font-size:12px;color:var(--mute);text-align:center;padding:4px 16px 20px;
 .grid button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:11px 0;font:600 16px system-ui;font-variant-numeric:tabular-nums}
 .grid button.on{background:var(--acc);border-color:var(--acc);color:#fff}
 .bigtime{font-size:40px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;margin:8px 0 4px;color:var(--acc)}
+.dates{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
+.dates::-webkit-scrollbar{display:none}
+.dates button{flex:none;min-width:62px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:7px 6px;display:flex;flex-direction:column;align-items:center;gap:1px;font:13px system-ui}
+.dates button b{font-size:16px;font-variant-numeric:tabular-nums}
+.dates button.off span{color:#c2410c}
+.dates button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.dates button.on span{color:#fff}
+.dnote{font-size:13px;color:var(--mute);margin:2px 4px 0}
+.bigtime{font-size:30px}
 .actions{display:flex;gap:8px;margin-top:16px}
 .actions button{flex:1;border:0;border-radius:12px;padding:13px;font:600 16px system-ui}
 .btn1{background:var(--acc);color:#fff}.btn2{background:var(--bg);color:var(--ink);border:1px solid var(--line)!important}
@@ -141,8 +150,9 @@ const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 let state={
   from:store.get("from","Batajnica"), to:store.get("to","Vukov spomenik"),
   station:store.get("station","Beograd Centar"),
-  when:"now", // now | today | tomorrow
-  time:null, showPast:false, tab:store.get("tab","trip")
+  date:null, // null = danas; inače "YYYY-MM-DD"
+  time:null, // null = od sada; "04:00" = ceo dan
+  showPast:false, tab:store.get("tab","trip")
 };
 let favs=store.get("favs",[]);
 
@@ -160,22 +170,43 @@ function pickStation(title,cur,cb){
   q.oninput=draw;draw();
   box.querySelector(".close").onclick=closeSheet;$("sheet").classList.add("open");
 }
+const isNow=()=>!state.date&&!state.time;
+const todayStr=()=>ymd(new Date());
+const addDays=(s,n)=>{const d=new Date(s+"T12:00:00");d.setDate(d.getDate()+n);return ymd(d)};
+const DSHORT=["Ned","Pon","Uto","Sre","Čet","Pet","Sub"];
+function dateName(s){const t0=todayStr();if(s===t0)return"Danas";if(s===addDays(t0,1))return"Sutra";const d=new Date(s+"T12:00:00");return DSHORT[d.getDay()]+" "+d.getDate()+"."+(d.getMonth()+1)+"."}
 function pickTime(){
-  const n=new Date();let [h,m]=state.time?state.time.split(":").map(Number):[n.getHours(),Math.floor(n.getMinutes()/5)*5];
+  const n=new Date();
+  let ds=state.date||todayStr();
+  let [h,m]=state.time?state.time.split(":").map(Number):[Math.max(4,n.getHours()),Math.floor(n.getMinutes()/5)*5];
+  if(h>23)h=23;
   const box=$("sheetBox");
+  const days=Array.from({length:28},(_,i)=>addDays(todayStr(),i));
   function draw(){
-    box.innerHTML=`<button class="close" aria-label="Zatvori">✕</button><h2>Vreme polaska</h2>
-    <div class="bigtime">${pad(h)}:${pad(m)}</div>
+    const sc=box.querySelector(".dates")?.scrollLeft||0;
+    box.innerHTML=`<button class="close" aria-label="Zatvori">✕</button><h2>Dan i vreme polaska</h2>
+    <div class="bigtime">${dateName(ds)} · ${pad(h)}:${pad(m)}</div>
+    <div class="grp">Dan</div>
+    <div class="dates">${days.map(s=>{const d=new Date(s+"T12:00:00");const off=!isWorkday(d);const t0=todayStr();
+      const top=s===t0?"Danas":s===addDays(t0,1)?"Sutra":DSHORT[d.getDay()];
+      return `<button data-d="${s}" class="${s===ds?"on":""}${off?" off":""}"><span>${top}</span><b>${d.getDate()}.${d.getMonth()+1}.</b></button>`}).join("")}</div>
+    <div class="dnote">${(()=>{const d=new Date(ds+"T12:00:00");if(ds>VALID_TO)return"⚠ Posle 12.12.2026. važi novi red vožnje – ovi podaci možda nisu tačni.";return isWorkday(d)?"Radni dan – saobraćaju svi vozovi.":(HOLIDAYS.includes(ds)?"Državni praznik":"Vikend")+" – ne saobraćaju vozovi samo za radne dane."})()}</div>
     <div class="grp">Sat</div><div class="grid h">${Array.from({length:20},(_,i)=>i+4).map(x=>`<button data-h="${x}" class="${x===h?"on":""}">${pad(x)}</button>`).join("")}</div>
     <div class="grp">Minut</div><div class="grid m">${Array.from({length:12},(_,i)=>i*5).map(x=>`<button data-m="${x}" class="${x===m?"on":""}">${pad(x)}</button>`).join("")}</div>
-    <div class="actions"><button class="btn2" id="tNow">Sada</button><button class="btn1" id="tOk">Prikaži od ${pad(h)}:${pad(m)}</button></div>`;
+    <div class="actions"><button class="btn2" id="tNow">Sada</button><button class="btn2" id="tDay">Ceo dan</button><button class="btn1" id="tOk">Prikaži</button></div>`;
+    box.querySelector(".dates").scrollLeft=sc;
+    box.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ds=b.dataset.d;draw()});
     box.querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>{h=+b.dataset.h;draw()});
     box.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{m=+b.dataset.m;draw()});
     box.querySelector(".close").onclick=closeSheet;
-    box.querySelector("#tNow").onclick=()=>{state.time=null;state.when="now";state.showPast=false;closeSheet();render()};
-    box.querySelector("#tOk").onclick=()=>{state.time=pad(h)+":"+pad(m);if(state.when==="now")state.when="today";state.showPast=false;closeSheet();render()};
+    const done=()=>{state.showPast=false;closeSheet();render()};
+    box.querySelector("#tNow").onclick=()=>{state.time=null;state.date=null;done()};
+    box.querySelector("#tDay").onclick=()=>{state.date=ds;state.time="04:00";done()};
+    box.querySelector("#tOk").onclick=()=>{state.date=ds===todayStr()?null:ds;state.time=pad(h)+":"+pad(m);done()};
   }
-  draw();$("sheet").classList.add("open");
+  draw();
+  const on=box.querySelector(".dates .on");if(on)on.scrollIntoView({inline:"center",block:"nearest"});
+  $("sheet").classList.add("open");
 }
 function fillSelect(sel,val){
   sel.innerHTML="";
@@ -185,16 +216,12 @@ function fillSelect(sel,val){
   sel.value=val;
 }
 
-function baseDate(){
-  const d=new Date();
-  if(state.when==="tomorrow")d.setDate(d.getDate()+1);
-  return d;
-}
+function baseDate(){return state.date?new Date(state.date+"T12:00:00"):new Date()}
 function isWorkday(d){const wd=d.getDay();return wd>=1&&wd<=5&&!HOLIDAYS.includes(ymd(d))}
 function refMinutes(){
   if(state.time)return toMin(state.time);
-  if(state.when==="now"){const n=new Date();return n.getHours()*60+n.getMinutes()}
-  return state.when==="today"?(()=>{const n=new Date();return n.getHours()*60+n.getMinutes()})():0;
+  if(state.date&&state.date!==todayStr())return 0;
+  const n=new Date();return n.getHours()*60+n.getMinutes();
 }
 const DAYS=["nedelja","ponedeljak","utorak","sreda","četvrtak","petak","subota"];
 function dayLabel(d){
@@ -205,11 +232,10 @@ function dayLabel(d){
 
 function whenControls(el){
   el.innerHTML="";
-  const opts=[["now","Sada"],["tomorrow","Sutra"]];
-  for(const[k,l]of opts){const b=document.createElement("button");b.className="chip"+(state.when===k&&!state.time?" on":"");b.textContent=l;
-    b.onclick=()=>{state.when=k;state.time=null;state.showPast=false;render()};el.appendChild(b)}
-  const ti=document.createElement("button");ti.className="timebtn"+(state.time?" on":"");
-  ti.textContent=state.time?`🕐 od ${state.time} ▾`:"🕐 Izaberi vreme ▾";
+  const sNow=document.createElement("button");sNow.className="chip"+(isNow()?" on":"");sNow.textContent="Sada";
+  sNow.onclick=()=>{state.date=null;state.time=null;state.showPast=false;render()};el.appendChild(sNow);
+  const ti=document.createElement("button");ti.className="timebtn"+(isNow()?"":" on");
+  ti.textContent=isNow()?"📅 Dan i vreme ▾":`📅 ${dateName(state.date||todayStr())}${state.time&&state.time!=="04:00"?" · "+state.time:state.time==="04:00"?" · ceo dan":""} ▾`;
   ti.onclick=pickTime;
   el.appendChild(ti);
   if(el.id==="whenRow"){
@@ -231,7 +257,7 @@ function findTrips(a,b,d){
   return out.sort((x,y)=>toMin(x.dep)-toMin(y.dep));
 }
 function countdown(dep,ref){
-  if(state.when!=="now"||state.time)return"";
+  if(!isNow())return"";
   const m=toMin(dep)-ref; if(m<0)return"";
   if(m===0)return"sada";
   return m<60?`za ${m} min`:`za ${Math.floor(m/60)} h ${m%60} min`;
@@ -241,8 +267,7 @@ function dur(a,b){const m=toMin(b)-toMin(a);return m<60?m+" min":Math.floor(m/60
 function renderList(container,items,mk,emptyMsg){
   container.innerHTML="";
   const ref=refMinutes();
-  const showAllDay=state.when==="tomorrow"&&!state.time;
-  let past=items.filter(x=>!showAllDay&&toMin(x.dep)<ref), up=items.filter(x=>showAllDay||toMin(x.dep)>=ref);
+  let past=items.filter(x=>toMin(x.dep)<ref), up=items.filter(x=>toMin(x.dep)>=ref);
   if(!items.length){container.innerHTML=`<div class="empty">${emptyMsg}</div>`;return}
   if(past.length){
     const b=document.createElement("button");b.className="more";
@@ -251,7 +276,7 @@ function renderList(container,items,mk,emptyMsg){
     if(state.showPast)past.forEach(x=>container.appendChild(mk(x,true,false)));
   }
   if(!up.length){const e=document.createElement("div");e.className="empty";e.textContent="Nema više polazaka za ovaj dan.";container.appendChild(e);
-    if(state.when==="now"&&!state.time){const b=document.createElement("button");b.className="more";b.textContent="Pogledaj sutrašnje polaske";b.onclick=()=>{state.when="tomorrow";render()};container.appendChild(b)}
+    {const b=document.createElement("button");b.className="more";b.textContent="Pogledaj polaske narednog dana";b.onclick=()=>{state.date=addDays(state.date||todayStr(),1);state.time="04:00";state.showPast=false;render()};container.appendChild(b)}
     return}
   up.forEach((x,k)=>container.appendChild(mk(x,false,k===0)));
 }
@@ -334,7 +359,7 @@ $("swap").onclick=()=>{[state.from,state.to]=[state.to,state.from];save();render
 $("tabTrip").onclick=()=>{state.tab="trip";save();render()};
 $("tabSt").onclick=()=>{state.tab="st";save();render()};
 validity();render();
-setInterval(()=>{if(state.when==="now"&&!state.time)render()},30000);
+setInterval(()=>{if(isNow())render()},30000);
 </script>
 </body>
 </html>
